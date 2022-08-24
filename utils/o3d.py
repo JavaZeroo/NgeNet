@@ -32,18 +32,25 @@ def pcd2npy(pcd):
     return npy
 
 
+def get_red():
+    """
+    Get color red for rendering
+    """
+    return [1., 0., 0.]
+
+
 def get_blue():
     """
     Get color blue for rendering
     """
-    return [0, 0.651, 0.929]
+    return [0, 0., 1.]
 
 
-def get_yellow():
+def get_green():
     """
     Get color yellow for rendering
     """
-    return [1, 0.706, 0]
+    return [0, 1., 0]
 
 
 def npy2feat(npy):

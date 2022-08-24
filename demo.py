@@ -4,14 +4,16 @@ import numpy as np
 import os
 import torch
 from easydict import EasyDict as edict
+import open3d as o3d
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 
 from data import collate_fn
 from models import architectures, NgeNet, vote
 from utils import decode_config, npy2pcd, pcd2npy, execute_global_registration, \
-                  npy2feat, setup_seed, get_blue, get_yellow, voxel_ds, normal, \
-                  read_cloud, vis_plys
+                  npy2feat, setup_seed, get_blue, get_green, voxel_ds, normal, \
+                  read_cloud, vis_plys, get_red
 
 CUR = os.path.dirname(os.path.abspath(__file__))
 
@@ -173,6 +175,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # input data 
+    src_path, tgt_path=args.src_path
+
+
+    
     source, target = read_cloud(args.src_path), read_cloud(args.tgt_path)
 
     # loading model
@@ -191,15 +197,17 @@ if __name__ == '__main__':
     # vis
     if not args.no_vis:
         # voxelization for fluent visualization 
-        source = voxel_ds(source, args.voxel_size)
-        target = voxel_ds(target, args.voxel_size)
+        # source = voxel_ds(source, args.voxel_size)
+        # target = voxel_ds(target, args.voxel_size)
         estimate = copy.deepcopy(source).transform(T)
-        source.paint_uniform_color(get_yellow())
+        source.paint_uniform_color(get_red())
         source.estimate_normals()
-        target.paint_uniform_color(get_blue())
+        target.paint_uniform_color(get_green())
         target.estimate_normals()
-        vis_plys([source, target], need_color=False)
-
-        estimate.paint_uniform_color(get_yellow())
+        # vis_plys([source, target], need_color=False)
+        o3d.io.write_point_cloud("result/1.pcd",source, write_ascii=True)
+        o3d.io.write_point_cloud("result/2.pcd",target, write_ascii=True)
+        estimate.paint_uniform_color(get_green())
         estimate.estimate_normals()
-        vis_plys([estimate, target], need_color=False)
+        # vis_plys([estimate, target], need_color=False)
+        o3d.io.write_point_cloud("result/3.pcd",estimate, write_ascii=True)

@@ -13,7 +13,7 @@ from data import ThreeDMatch, get_dataloader
 from models import architectures, NgeNet, vote
 from utils import decode_config, npy2pcd, pcd2npy, execute_global_registration, \
                   npy2feat, vis_plys, setup_seed, fmat, to_tensor, get_blue, \
-                  get_yellow
+                  get_green
 from metrics import inlier_ratio_core, Metric
 from rich.console import Console
 from rich.table import Table
@@ -220,7 +220,7 @@ def main(args):
     
             if args.vis:
                 source_ply = npy2pcd(source_npy_raw)
-                source_ply.paint_uniform_color(get_yellow())
+                source_ply.paint_uniform_color(get_green())
                 estimate_ply = copy.deepcopy(source_ply).transform(pred_T)
                 target_ply = npy2pcd(target_npy_raw)
                 target_ply.paint_uniform_color(get_blue())
