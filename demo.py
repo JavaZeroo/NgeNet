@@ -2,6 +2,7 @@ import argparse
 import copy
 import numpy as np
 import os
+import yaml
 import torch
 from easydict import EasyDict as edict
 import open3d as o3d
@@ -29,7 +30,7 @@ class NgeNet_pipeline():
         self.neighborhood_limits = [38, 36, 35, 38]
         model = NgeNet(config)
         if self.cuda:
-            model = model.cuda()
+            model = model.cuda(5)
             model.load_state_dict(torch.load(ckpt_path))
         else:
             model.load_state_dict(
@@ -161,10 +162,10 @@ class NgeNet_pipeline():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Configuration Parameters')
     parser.add_argument('--src_path', required=True, help='source point cloud path')
-    parser.add_argument('--tgt_path', required=True, help='target point cloud path')
-    parser.add_argument('--checkpoint', required=True, help='checkpoint path')
-    parser.add_argument('--voxel_size', type=float, required=True, help='voxel size')
-    parser.add_argument('--npts', type=int, default=20000,
+    parser.add_argument('--tgt_path', required=False, help='target point cloud path')
+    parser.add_argument('--checkpoint', default='your_path/3dmatch.pth', help='checkpoint path')
+    parser.add_argument('--voxel_size', type=float, default=3, help='voxel size')
+    parser.add_argument('--npts', type=int, default=80000,
                         help='the number of sampled points for registration')
     parser.add_argument('--no_vote', action='store_true',
                         help='whether to use multi-level consistent voting')
@@ -173,41 +174,44 @@ if __name__ == '__main__':
     parser.add_argument('--no_cuda', action='store_true',
                         help='whether to use cuda')
     args = parser.parse_args()
-
     # input data 
-    src_path, tgt_path=args.src_path
+    src_path=args.src_path
+    print(src_path)
 
+    files = os.listdir(src_path)
+    for file in files:
+        # loading model
+        cuda = not args.no_cuda
+        vote_flag = not args.no_vote
+        model = NgeNet_pipeline(
+            ckpt_path=args.checkpoint, 
+            voxel_size=args.voxel_size, 
+            vote_flag=vote_flag,
+            cuda=cuda)
+        print('======================================')
+        file_dir = os.path.join(src_path, file)
+        mid_dir = os.path.join(file_dir, 'center/1.pcd')
+        up_dir = os.path.join(file_dir, 'up/1.pcd')
+        down_dir = os.path.join(file_dir, 'down/1.pcd')
+        target = read_cloud(mid_dir)
+        pcds = [up_dir, down_dir]
+        for pcd in pcds:
+            type = mid_dir.split('/')[-2]
+            print(type)
+            source = pcd
+            # registration
+            T = model.pipeline(source, target, npts=args.npts)
+            print('Estimated transformation matrix: ', T)
 
-    
-    source, target = read_cloud(args.src_path), read_cloud(args.tgt_path)
-
-    # loading model
-    cuda = not args.no_cuda
-    vote_flag = not args.no_vote
-    model = NgeNet_pipeline(
-        ckpt_path=args.checkpoint, 
-        voxel_size=args.voxel_size, 
-        vote_flag=vote_flag,
-        cuda=cuda)
-    
-    # registration
-    T = model.pipeline(source, target, npts=args.npts)
-    print('Estimated transformation matrix: ', T)
-
-    # vis
-    if not args.no_vis:
-        # voxelization for fluent visualization 
-        # source = voxel_ds(source, args.voxel_size)
-        # target = voxel_ds(target, args.voxel_size)
-        estimate = copy.deepcopy(source).transform(T)
-        source.paint_uniform_color(get_red())
-        source.estimate_normals()
-        target.paint_uniform_color(get_green())
-        target.estimate_normals()
-        # vis_plys([source, target], need_color=False)
-        o3d.io.write_point_cloud("result/1.pcd",source, write_ascii=True)
-        o3d.io.write_point_cloud("result/2.pcd",target, write_ascii=True)
-        estimate.paint_uniform_color(get_green())
-        estimate.estimate_normals()
-        # vis_plys([estimate, target], need_color=False)
-        o3d.io.write_point_cloud("result/3.pcd",estimate, write_ascii=True)
+            # vis
+            if not args.no_vis:
+                estimate = copy.deepcopy(source).transform(T)
+                source.paint_uniform_color(get_red())
+                source.estimate_normals()
+                target.paint_uniform_color(get_green())
+                target.estimate_normals()
+                o3d.io.write_point_cloud("result/1.pcd",source, write_ascii=True)
+                o3d.io.write_point_cloud("result/2.pcd",target, write_ascii=True)
+                estimate.paint_uniform_color(get_green())
+                estimate.estimate_normals()
+                o3d.io.write_point_cloud("result/3.pcd",estimate, write_ascii=True)
