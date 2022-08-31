@@ -58,7 +58,7 @@ optimiser:
 dataset:
   dataset: threedmatch
   benchmark: 3DMatch
-  root: Datasets/indoor
+  root: data/indoor
   batch_size: 1
   num_workers: 6
   augment_noise: 0.005

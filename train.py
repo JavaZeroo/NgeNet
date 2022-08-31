@@ -144,7 +144,7 @@ def main():
 
             # This line of code reduces the training speed. 
             # If GPU memory allows, it is recommended not to add this line of code or add this line after each epoch
-            torch.cuda.empty_cache()
+            # torch.cuda.empty_cache()
         scheduler.step()
 
         total_circle_loss, total_recall, total_loss, total_recall_sum = [], [], [], []
